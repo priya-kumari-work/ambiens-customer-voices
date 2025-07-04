@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Star, Quote } from 'lucide-react';
+import { Star, Quote, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import emailjs from '@emailjs/browser';
 
 interface Review {
   id: string;
@@ -20,7 +20,13 @@ const Index = () => {
   const [name, setName] = useState('');
   const [reviewText, setReviewText] = useState('');
   const [rating, setRating] = useState(5);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // EmailJS Configuration - Replace these with your actual values
+  const EMAILJS_SERVICE_ID = 'your_service_id';
+  const EMAILJS_TEMPLATE_ID = 'your_template_id';
+  const EMAILJS_PUBLIC_KEY = 'your_public_key';
 
   // Load reviews from localStorage on component mount
   useEffect(() => {
@@ -35,7 +41,7 @@ const Index = () => {
     localStorage.setItem('ambiens_reviews', JSON.stringify(reviews));
   }, [reviews]);
 
-  const handleSubmitReview = (e: React.FormEvent) => {
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name.trim() || !reviewText.trim()) {
@@ -47,23 +53,54 @@ const Index = () => {
       return;
     }
 
-    const newReview: Review = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      review: reviewText.trim(),
-      rating,
-      date: new Date().toLocaleDateString(),
-    };
+    setIsSubmitting(true);
 
-    setReviews(prev => [newReview, ...prev]);
-    setName('');
-    setReviewText('');
-    setRating(5);
-    
-    toast({
-      title: "Thank you!",
-      description: "Your review has been submitted successfully.",
-    });
+    try {
+      // Prepare email data
+      const emailData = {
+        customer_name: name.trim(),
+        customer_review: reviewText.trim(),
+        rating: rating,
+        date: new Date().toLocaleDateString(),
+        to_email: 'your-email@example.com', // Replace with your email
+      };
+
+      // Send email using EmailJS
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        emailData,
+        EMAILJS_PUBLIC_KEY
+      );
+
+      // Create new review for local display
+      const newReview: Review = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        review: reviewText.trim(),
+        rating,
+        date: new Date().toLocaleDateString(),
+      };
+
+      setReviews(prev => [newReview, ...prev]);
+      setName('');
+      setReviewText('');
+      setRating(5);
+      
+      toast({
+        title: "Thank you!",
+        description: "Your review has been submitted successfully and sent to Ambiens.",
+      });
+    } catch (error) {
+      console.error('EmailJS Error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit review. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -176,7 +213,7 @@ const Index = () => {
         <div className="bg-white rounded-3xl shadow-2xl p-10 border-t-8 border-gradient-to-r from-yellow-400 to-orange-400 max-w-4xl mx-auto" style={{ borderTopColor: '#facc15' }}>
           <div className="text-center mb-10">
             <div className="w-16 h-16 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Star className="w-8 h-8 text-white" />
+              <Mail className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-yellow-600 to-orange-500 bg-clip-text text-transparent">
               Share Your Experience
@@ -199,6 +236,7 @@ const Index = () => {
                   placeholder="Enter your full name"
                   className="border-2 border-gray-200 focus:border-yellow-400 focus:ring-yellow-400 h-12 text-lg"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -213,6 +251,7 @@ const Index = () => {
                       type="button"
                       onClick={() => setRating(i + 1)}
                       className="focus:outline-none transition-transform hover:scale-110"
+                      disabled={isSubmitting}
                     >
                       <Star
                         className={`w-8 h-8 transition-colors ${
@@ -238,15 +277,31 @@ const Index = () => {
                 rows={6}
                 className="border-2 border-gray-200 focus:border-yellow-400 focus:ring-yellow-400 text-lg resize-none"
                 required
+                disabled={isSubmitting}
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 text-lg"
+              disabled={isSubmitting}
+              className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Submit Your Review
+              {isSubmitting ? 'Submitting...' : 'Submit Your Review'}
             </Button>
+
+            {/* EmailJS Configuration Instructions */}
+            <div className="mt-8 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-lg">
+              <h3 className="text-lg font-semibold text-blue-800 mb-2">Configuration Required</h3>
+              <p className="text-blue-700 text-sm mb-2">
+                To receive emails, please update the following constants in the code:
+              </p>
+              <ul className="text-blue-700 text-sm space-y-1">
+                <li>• <code>EMAILJS_SERVICE_ID</code>: Your EmailJS service ID</li>
+                <li>• <code>EMAILJS_TEMPLATE_ID</code>: Your EmailJS template ID</li>
+                <li>• <code>EMAILJS_PUBLIC_KEY</code>: Your EmailJS public key</li>
+                <li>• Update the <code>to_email</code> field with your email address</li>
+              </ul>
+            </div>
           </form>
         </div>
       </div>
