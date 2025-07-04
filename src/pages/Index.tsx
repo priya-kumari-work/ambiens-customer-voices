@@ -117,10 +117,9 @@ const Index = () => {
               {reviews.map((review, index) => (
                 <Card 
                   key={review.id} 
-                  className="bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-l-4 border-amber-400 transform hover:-translate-y-1"
+                  className="bg-white shadow-lg hover:shadow-xl transition-all duration-300 border-l-4 border-amber-400 transform hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-4"
                   style={{
-                    animationDelay: `${index * 0.1}s`,
-                    animation: 'fadeInUp 0.6s ease-out forwards'
+                    animationDelay: `${index * 100}ms`,
                   }}
                 >
                   <CardContent className="p-6">
@@ -233,19 +232,6 @@ const Index = () => {
           </p>
         </div>
       </footer>
-
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 };
